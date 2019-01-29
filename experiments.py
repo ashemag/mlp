@@ -30,13 +30,13 @@ class Experiment(object):
         acc_valid = stats[len(stats) - 1, keys['error(valid)']]
         return err_train, err_valid, acc_train, acc_valid
 
-    def _compare(self, model, num_epochs):
+    def _compare(self, model, target_class, target_percentage, num_epochs):
         train_data = MNISTDataProvider('train')
         valid_data = MNISTDataProvider('valid')
 
         err_train, err_valid, acc_train, acc_valid = self._train(model, num_epochs, train_data, valid_data)
 
-        inputs, targets = ModifyDataProvider().modify(0, .01, train_data.inputs, train_data.targets)
+        inputs, targets = ModifyDataProvider().modify(target_class, target_percentage, train_data.inputs, train_data.targets)
         train_data.inputs = np.array(inputs)
         train_data.targets = np.array(targets)
         err_train_comp, err_valid_comp, acc_train_comp, acc_valid_comp = self._train(model, num_epochs, train_data, valid_data)
@@ -48,7 +48,7 @@ class Experiment(object):
         print("Validation accuracy decreased by {0}%".format(round(acc_valid_diff, 2)))
         print("\n===\n")
 
-    def play(self):
+    def play(self, target_class, target_percentage):
         # Seed a random number generator
         seed = 31102016
         rng = np.random.RandomState(seed)
@@ -68,9 +68,8 @@ class Experiment(object):
             ReluLayer(),
             AffineLayer(hidden_dim, output_dim, weights_init, biases_init)
         ])
-        self._compare(model, 2)
+        self._compare(model, target_class, target_percentage, 2)
 
 
-
-Experiment().play()
+Experiment().play(0, .01)
 
