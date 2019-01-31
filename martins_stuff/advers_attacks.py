@@ -5,6 +5,101 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
+
+class FastGradientSignAttack():
+    def __init__(self, model, alpha=1):
+        self.model = model
+        self.alpha = alpha
+
+    def __call__(self,x,y_true):
+        '''
+        :param x: numpy array size (img_height, img_width). single observation.
+        :param y_true: numpy array size (1,num_classes). one-hot-encoded true label of x.
+        :return: x_adv: numpy array size (img_height, img_width). adversarial example
+        based on x_obs
+        '''
+
+        y_true_int = np.argmax(y_true, axis=1)  # F.cross_entropy requires target to be integer encoded
+        y_true_int_tens = torch.Tensor(y_true_int).long()
+        x_tens = torch.Tensor(x).float() # input to model must be tensor of type float
+        x_tens.requires_grad = True
+        y_pred_tens = self.model(x_tens)  # returns tensor shape (-1,) of predicted class probabilities
+        y_pred_tens = torch.reshape(y_pred_tens, (1, -1))  # required shape for cross_entropy
+        loss = F.cross_entropy(input=y_pred_tens, target=y_true_int_tens)
+
+        loss.backward()  # calculates (does not update) gradient delta_loss/delta_x for ever x that has requires_grad = true
+        grad_wrt_x = x_tens.grad.data.numpy()  # returns array of size (-1,)
+        grad_wrt_x = np.reshape(grad_wrt_x, (1, -1))  # row vector format (same format as input)
+        x_adv = x + self.alpha * np.sign(grad_wrt_x)
+
+        return x_adv
+
+
+class LInfProjectedGradientAttack():
+    '''
+    performs max-norm attack projected gradient descent (gradient based iterative local optimizer)
+    paper: https://arxiv.org/pdf/1611.01236.pdf
+
+    design note: was easier to implement advers training when attacks were made classes with __call__
+    '''
+    def __init__(self,model,steps,alpha,epsilon,rand=False):
+        self.model = model
+        self.steps = steps
+        self.alpha = alpha
+        self.epsilon = epsilon
+        self.rand = rand
+
+    def __call__(self,x,y_true):
+        '''
+        :param x: numpy array size (img_height, img_width). single observation.
+        :param y_true: numpy array size (1,num_classes). one-hot-encoded true label of x.
+        :return: x_adv: numpy array size (img_height, img_width). adversarial example
+        based on x_obs
+        '''
+
+        y_true_int = np.argmax(y_true, axis=1) # one-hot to integer encoding.
+        y_true_int_tens = torch.Tensor(y_true_int).long()
+
+        if self.rand:
+            delta0 = self.epsilon * np.random.uniform(-1, 1, size=x.shape)  # init random
+        else:
+            delta0 = np.zeros_like(x)  # init zeros
+
+        x_adv = x + delta0
+
+        for _ in range(self.steps):
+            x_adv_tens = torch.Tensor(x_adv).float()
+            x_adv_tens.requires_grad = True
+            y_pred = self.model(x_adv_tens)
+            y_pred = torch.reshape(y_pred, (1, -1))
+            loss = F.cross_entropy(input=y_pred, target=y_true_int_tens)
+            loss.backward()
+            grad_x_adv = x_adv_tens.grad.data.numpy();
+            grad_x_adv = np.reshape(grad_x_adv, (1, -1))
+            x_adv = x_adv + self.alpha * np.sign(grad_x_adv)  # x_adv is numpy array
+            x_adv = np.clip(x_adv, x - self.epsilon, x + self.epsilon)  # project onto max-norm (cube)
+
+        return x_adv
+
+
+def fast_gradient_sign_attack(x_obs, y_obs_true, model, epsilon=100):
+    '''
+    gradient wrt input x shows how much the loss change wrt to small change in x. this fact is
+    used to construct an example that worsens the loss of an observation.
+
+    :param: x_obs is a numpy array of size (1,-1). represents a single observation of an image.
+    :param: y_obs_true numpy array of size (1,-1). is one-hot-encoded. gives true label of x_obs
+    :return: adversarial example. is a numpy array of size (1,-1)
+    '''
+
+    loss, x_obs_temp = cross_entropy_loss_obs(x_obs,y_obs_true,model)
+    loss.backward() # calculates (does not update) gradient delta_loss/delta_x for ever x that has requires_grad = true
+    grad_wrt_x_obs = x_obs_temp.grad.data.numpy() # returns array of size (-1,)
+    grad_wrt_x_obs = np.reshape(grad_wrt_x_obs,(1,-1)) # row vector format (same format as input)
+    advers_x_obs = x_obs + epsilon*np.sign(grad_wrt_x_obs)
+
+    return advers_x_obs
+
 def cross_entropy_loss_obs(x_obs, y_obs_target, model):
     '''
     :param: x_obs is a numpy array of size (1,-1). represents a single observation of an image.
@@ -14,7 +109,7 @@ def cross_entropy_loss_obs(x_obs, y_obs_target, model):
 
     # F.cross_entropy requires target to be integer encoded
     y_obs_desired_int = np.argmax(y_obs_target, axis=1)
-    y_obs_desired_int = torch.Tensor(y_obs_desired_int).long()  # notice brackets []
+    y_obs_desired_int = torch.Tensor(y_obs_desired_int).long()
 
     # input to model must be tensor of type float
     x_obs_temp = torch.Tensor(x_obs).float()
@@ -24,6 +119,15 @@ def cross_entropy_loss_obs(x_obs, y_obs_target, model):
     loss = F.cross_entropy(input=y_obs_pred, target=y_obs_desired_int)
 
     return loss, x_obs_temp
+
+
+def l_two_pgd_attack(model,steps,alpha,epsilon):
+
+    # projection just on sphere.
+    # recall from thesis how to generate uniform points on sphere
+
+    pass
+
 
 def targeted_fast_gradient_sign_attack(x_obs,y_obs_desired,model,epsilon=100):
     '''
