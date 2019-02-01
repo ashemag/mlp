@@ -1,5 +1,5 @@
-from martins_stuff.simple_classifier import SimpleNeuralClassifier
 from martins_stuff import data_providers
+from martins_stuff.ModelBuilder.simple_fnn import SimpleFNN
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -13,11 +13,13 @@ class FastGradientSignAttack():
 
     def __call__(self,x,y_true):
         '''
-        :param x: numpy array size (img_height, img_width). single observation.
+        :param x: numpy array size (1,img_height*img_width). single observation.
         :param y_true: numpy array size (1,num_classes). one-hot-encoded true label of x.
         :return: x_adv: numpy array size (img_height, img_width). adversarial example
         based on x_obs
         '''
+        if x.shape[0] != 1 or len(x.shape)>2:
+            raise ValueError('x incorrect shape, expected (1,-1) got {}'.format(x.shape))
 
         y_true_int = np.argmax(y_true, axis=1)  # F.cross_entropy requires target to be integer encoded
         y_true_int_tens = torch.Tensor(y_true_int).long()
@@ -206,11 +208,9 @@ def plot_things(plot_dict,epsilon):
     plt.show()
 
 def main():
-    model_path = "C:/test_simple/saved_models_train/model_40"
-
-    input_shape = (28, 28)
-    num_classes = 10
-    model = SimpleNeuralClassifier(input_shape, h_out=100, num_classes=num_classes)
+    from globals import ROOT_DIR; import os
+    model_path = os.path.join(ROOT_DIR,'martins_stuff/SavedModels/SimpleFNN/model_49')
+    model = SimpleFNN(input_shape=(28,28), h_out=100, num_classes=10)
     model.load_model(model_path) # pre-trained model (acc 85%)
 
     for param_tensor in model.state_dict():

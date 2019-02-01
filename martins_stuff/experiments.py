@@ -2,6 +2,7 @@ import numpy as np
 import os
 from tqdm import tqdm
 from martins_stuff.advers_attacks import *
+from martins_stuff.ModelBuilder.simple_fnn import SimpleFNN
 
 def prep_data_for_advers_train(x, y_onehot, attack, save_aug_data=False, save_path_npzfile=None):
     '''
@@ -40,7 +41,7 @@ def test_attacks(model,x_obs,y_true):
     '''
     # to generate trippy images show what attacks look like on advers trained network
 
-    fast_attack = FastGradientSignAttack(model,alpha=0.1)
+    fast_attack = FastGradientSignAttack(model,alpha=1)
     pgd_attack = LInfProjectedGradientAttack(model,steps=10,alpha=0.1,epsilon=2,rand=False)
 
     x_adv_fast = fast_attack(x_obs,y_true)
@@ -51,10 +52,10 @@ def test_attacks(model,x_obs,y_true):
     images_dict = {'original':x_obs, 'advers_fast':x_adv_fast, 'advers_pgd':x_adv_pgd}
     plt.figure()
 
-    for i, (name, img) in enumerate(images_dict):
+    for i, (name, img) in enumerate(images_dict.items()):
         plt.subplot(1, 3, i + 1)
         plt.imshow(img.reshape((28, 28)), cmap='Greens')
-        plt.xlabel(xlabel=name)
+        plt.xlabel(name)
 
     plt.subplots_adjust(hspace=0.5)
     plt.show()
@@ -67,16 +68,15 @@ def visualize_input_space_loss_gradients():
 
 def load_test_model(pretrained=False):
     if pretrained:
-        ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-        saved_models_dir = os.path.join(ROOT_DIR, 'martins_stuff/saved_models')
-        model_path = os.path.join(saved_models_dir, 'saved_models_train/model_40')
-        input_shape = (28, 28)
-        num_classes = 10
-
-        # in order to load model you need to create a model that has same structure as the one you saved
-        model = SimpleNeuralClassifier(input_shape, h_out=100, num_classes=num_classes)
+        from globals import ROOT_DIR
+        model_path = os.path.join(ROOT_DIR, 'martins_stuff/SavedModels/SimpleFNN/model_49')
+        model = SimpleFNN(input_shape=(28,28), h_out=100, num_classes=10) # (1)
         model.load_model(model_path)
-
+        '''
+        Remarks:
+        (1) in order to load model you need to create a model that has same structure as the
+        one you saved.
+        '''
     return model
 
 if __name__ == '__main__':
@@ -84,7 +84,7 @@ if __name__ == '__main__':
 
     seed = 9112018
     rng = np.random.RandomState(seed=seed)
-    data = data_providers.MNISTDataProvider('train', batch_size=100, rng=rng, max_num_batches=100)
+    data = data_providers.MNISTDataProvider('train', batch_size=1, rng=rng, max_num_batches=100)
     x_obs, y_true = data.next()
 
     test_attacks(model,x_obs,y_true)

@@ -12,8 +12,10 @@ import os
 from mlp import DEFAULT_SEED
 import random
 
+from globals import ROOT_DIR
+
 root_dir = os.path.normpath(os.getcwd() + os.sep + os.pardir) # path to mlpractical
-os.environ['MLP_DATA_DIR'] = os.path.join(root_dir,'current_data') # path to mlpractical/data1 # TODO: probably change this
+os.environ['MLP_DATA_DIR'] = os.path.join(ROOT_DIR,'data')
 
 class DataProvider(object):
     """Generic data provider."""
