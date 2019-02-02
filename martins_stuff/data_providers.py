@@ -10,43 +10,18 @@ import gzip
 import numpy as np
 import os
 from mlp import DEFAULT_SEED
-from collections import Counter
+import random
 
+from globals import ROOT_DIR
 
-class ModifyDataProvider(object):
-    """ Modifies existing data provider to skew amount of instances of a certain label """
-    @staticmethod
-    def get_label_distribution(targets, key='original'):
-        cnt = Counter(targets)
-        total = sum(cnt.values())
-        print(total, "total labels")
-        for i in range(0, 10): # in case of MNIST
-            print("{0}% values of {1} found in {2} dataset.".format(round(cnt[i] / float(total) * 100, 2), i, key))
-
-    @staticmethod
-    def modify(label, percentage, inputs, targets):
-        """ Reduce appearance of a specified class (label) in dataset
-        """
-        total = len(targets)
-        target_amount = total * percentage
-        count = 0
-        inputs_mod, targets_mod = [], []
-        n = len(targets)
-        for i in range(n):
-            if targets[i] == label:
-                count += 1
-                if count >= target_amount:
-                    continue
-            targets_mod.append(targets[i])
-            inputs_mod.append(inputs[i])
-        return inputs_mod, targets_mod
-
+root_dir = os.path.normpath(os.getcwd() + os.sep + os.pardir) # path to mlpractical
+os.environ['MLP_DATA_DIR'] = os.path.join(ROOT_DIR,'data')
 
 class DataProvider(object):
     """Generic data provider."""
 
     def __init__(self, inputs, targets, batch_size, max_num_batches=-1,
-                 shuffle_order=True, rng=None):
+                 shuffle_order=True, rng=random.seed(19)):
         """Create a new data provider object.
 
         Args:
@@ -74,10 +49,14 @@ class DataProvider(object):
         self._update_num_batches()
         self.shuffle_order = shuffle_order
         self._current_order = np.arange(inputs.shape[0])
+
         if rng is None:
             rng = np.random.RandomState(DEFAULT_SEED)
+
         self.rng = rng
         self.new_epoch()
+
+        print("Created new DataProvider. Inputs shape:", self.inputs.shape," Targets shape: ",self.targets.shape)
 
     @property
     def batch_size(self):
@@ -143,6 +122,7 @@ class DataProvider(object):
 
     def shuffle(self):
         """Randomly shuffles order of data."""
+
         perm = self.rng.permutation(self.inputs.shape[0])
         self._current_order = self._current_order[perm]
         self.inputs = self.inputs[perm]
@@ -165,7 +145,6 @@ class DataProvider(object):
 
 class MNISTDataProvider(DataProvider):
     """Data provider for MNIST handwritten digit images."""
-
     def __init__(self, which_set='train', batch_size=100, max_num_batches=-1,
                  shuffle_order=True, rng=None):
         """Create a new MNIST data provider object.
@@ -183,10 +162,10 @@ class MNISTDataProvider(DataProvider):
             rng (RandomState): A seeded random number generator.
         """
         # check a valid which_set was provided
-        assert which_set in ['train', 'valid', 'test'], (
-            'Expected which_set to be either train, valid or eval. '
-            'Got {0}'.format(which_set)
-        )
+        # assert which_set in ['train', 'valid', 'test'], (
+        #     'Expected which_set to be either train, valid or eval. '
+        #     'Got {0}'.format(which_set)
+        # )
         self.which_set = which_set
         self.num_classes = 10
         # construct path to data using os.path.join to ensure the correct path
@@ -248,11 +227,13 @@ class EMNISTDataProvider(DataProvider):
                 the data before each epoch.
             rng (RandomState): A seeded random number generator.
         """
+
         # check a valid which_set was provided
-        assert which_set in ['train', 'valid', 'test'], (
-            'Expected which_set to be either train, valid or eval. '
-            'Got {0}'.format(which_set)
-        )
+        # assert which_set in ['train', 'valid', 'test'], (
+        #     'Expected which_set to be either train, valid or eval. '
+        #     'Got {0}'.format(which_set)
+        # )
+
         self.which_set = which_set
         self.num_classes = 47
         # construct path to data using os.path.join to ensure the correct path
@@ -265,13 +246,20 @@ class EMNISTDataProvider(DataProvider):
         )
         # load data from compressed numpy file
         loaded = np.load(data_path)
-        print(loaded.keys())
         inputs, targets = loaded['inputs'], loaded['targets']
         inputs = inputs.astype(np.float32)
+
+        width = inputs.shape[2] # (N,28,56), width is 56
+
+
         if flatten:
             inputs = np.reshape(inputs, newshape=(-1, 28*28))
         else:
-            inputs = np.reshape(inputs, newshape=(-1, 1, 28, 28))
+            if width > 28:
+                inputs = np.reshape(inputs, newshape=(-1, 1, 28, 56))
+            else:
+                inputs = np.reshape(inputs, newshape=(-1, 1, 28, 28))
+
         inputs = inputs / 255.0
         # pass the loaded data to the parent class __init__
         super(EMNISTDataProvider, self).__init__(
@@ -377,10 +365,10 @@ class CCPPDataProvider(DataProvider):
             'Data file does not exist at expected path: ' + data_path
         )
         # check a valid which_set was provided
-        assert which_set in ['train', 'valid'], (
-            'Expected which_set to be either train or valid '
-            'Got {0}'.format(which_set)
-        )
+        # assert which_set in ['train', 'valid'], (
+        #     'Expected which_set to be either train or valid '
+        #     'Got {0}'.format(which_set)
+        # )
         # check input_dims are valid
         if not input_dims is not None:
             input_dims = set(input_dims)
