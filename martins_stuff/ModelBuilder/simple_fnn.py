@@ -54,7 +54,6 @@ def test_train_and_save():
     '''
     example of training a model and saving its results.
     '''
-
     rng = np.random.RandomState(seed=9112018)
     train_data = data_providers.MNISTDataProvider('train',batch_size=100, rng=rng,max_num_batches=100)
     model = SimpleFNN(input_shape=(28,28), h_out=100, num_classes=10)
@@ -64,8 +63,20 @@ def test_train_and_save():
     num_epochs = 50
     model.train_full(train_data, num_epochs, optimizer, train_results_file, saved_models_dir)
 
+def test_evaluating():
+    rng = np.random.RandomState(seed=9112018)
+    valid_data = data_providers.MNISTDataProvider('valid', batch_size=100, rng=rng, max_num_batches=100)
+    model = SimpleFNN(input_shape=(28,28), h_out=100, num_classes=10)
+    eval_results_file_path = os.path.join(globals.ROOT_DIR,'martins_stuff/ExperimentResults/eval_results_simple_fnn.txt')
+    epochs = [i for i in range(50)]
+
+    model_train_dir = os.path.join(globals.ROOT_DIR,'martins_stuff/SavedModels/SimpleFNN')
+    model.evaluate_full(valid_data,epochs,model_train_dir,eval_results_file_path)
+
+
 def main():
-    test_train_and_save()
+    #test_train_and_save()
+    test_evaluating()
 
     pass
 
