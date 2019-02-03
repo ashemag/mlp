@@ -87,7 +87,6 @@ class Experiment(object):
         return atrain_acc_diff, train_loss_diff, valid_acc_diff, valid_loss_diff
 
 
-# with open ('ExperimentResults/minority_class_experiment.txt', 'w') as f:
 def driver():
     data = {}
     target_percentage = .01
