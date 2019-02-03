@@ -6,6 +6,7 @@ import os
 from martins_stuff.ModelBuilder import storage_utils
 from tqdm import tqdm
 import sys
+from collections import OrderedDict
 
 class Network(torch.nn.Module):
     def __init__(self):
@@ -94,30 +95,114 @@ class Network(torch.nn.Module):
 
         for current_epoch in range(self.num_epochs):
             epoch_start_time = time.time()
-            batch_statistics = {"train_acc": [], "train_loss": [],"epoch_train_time":0}
+            batch_statistics = {"train_acc": [], "train_loss": []}
 
             for i,(x_train_batch, y_train_batch) in tqdm(enumerate(self.train_data),file=sys.stdout):  # get data batches
                 loss_batch, accuracy_batch = self.train_iter(x_train_batch, y_train_batch)  # take a training iter step
                 batch_statistics["train_loss"].append(loss_batch)  # add current iter loss to the train loss list
                 batch_statistics["train_acc"].append(accuracy_batch)  # add current iter acc to the train acc list
 
-            batch_statistics["epoch_train_time"] = time.time() - epoch_start_time
-            batch_statistics["current_epoch"] = current_epoch
+            statistics_to_save = \
+                OrderedDict({"current_epoch": current_epoch, "train_acc": 0, "train_loss": 0, "epoch_train_time": 0})
+            statistics_to_save["epoch_train_time"] = time.time() - epoch_start_time
 
-            self.save_train_epoch_results(batch_statistics,train_file_path) # uses batch statistics to calculate full data stats.
-            self.save_model(model_save_dir,current_epoch)
+            for key, value in batch_statistics.items():
+                if key not in ["current_epoch", "epoch_train_time"]:
+                    batch_values = np.array(batch_statistics[key])
+                    epoch_val = np.mean(batch_values)  # get mean of all metrics of current epoch metrics dict
+                    statistics_to_save[key] = np.around(epoch_val, decimals=4)
 
-    def evaluate_full(self):
-        # During training a model is saved. Here I want to load the model from every epoch and test it on a validation
-        # set. Seperate trainng from evaluating. I like this better.
+            print(statistics_to_save)
+            storage_utils.save_statistics(statistics_to_save, train_file_path)
+            self.save_model(model_save_dir,model_save_name='model_epoch_{}'.format(str(current_epoch))) # (1)
 
-        pass
+            '''
+            Remarks:
+            (1) models that are saved at each epoch are specifically given the name "model_epoch_{}". important for
+            it to be in format. this format is assumed in other functions e.g. run_evaluation_iter()
+            '''
 
-    def save_model(self, model_save_dir,current_epoch):
+    def train_iter(self,x_train_batch,y_train_batch):
+        """
+        :param x_train_batch: array, one-hot-encoded
+        :param y_train_batch: array, one-hot-encoded
+        :return:
+        """
+
+        # CrossEntropyLoss. Input: (N,C), target: (N) each value is integer encoded.
+
+        self.train()
+        y_train_batch_int = np.argmax(y_train_batch,axis=1)
+        y_train_batch_int = torch.Tensor(y_train_batch_int).long().to(device=self.device)
+        x_train_batch = torch.Tensor(x_train_batch).float().to(device=self.device)
+        y_pred_batch = self(x_train_batch) # model forward pass
+        loss = F.cross_entropy(input=y_pred_batch,target=y_train_batch_int) # self.cross_entropy(input=y_pred_batch,target=y_train_batch_int)
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+
+        acc_batch = self.get_acc_batch(x_train_batch,y_train_batch,y_pred_batch)
+
+        return loss.data, acc_batch
+
+
+    def run_evaluation_iter(self,x_batch,y_batch):
+        '''
+        :param x_batch:
+        :param y_batch:
+        :return:
+        '''
+        self.eval()
+        y_batch_int = np.argmax(y_batch, axis=1)
+        y_batch_int_tens = torch.Tensor(y_batch_int).long().to(device=self.device)
+        x_batch_tens = torch.Tensor(x_batch).float().to(device=self.device)
+        y_batch_pred_tens = self(x_batch_tens)  # model forward pass
+        loss_batch = F.cross_entropy(input=y_batch_pred_tens,target=y_batch_int_tens)
+        acc_batch = self.get_acc_batch(x_batch_tens,y_batch,y_batch_pred_tens)
+
+        return loss_batch.data, acc_batch # TODO: what is the return type?
+
+    def evaluate_full(self,valid_set,epochs,model_train_dir,eval_results_file_path):
+        '''
+        :param valid_set:
+        :param model_train_dir:
+        :param epochs:
+
+        during training model at each epoch is saved. this method loads models at specified epochs and
+        evaluates performance on a given (validation) set.
+
+        design: seperate training from testing on validation set. sometimes more convenient.
+        '''
+        for epoch in epochs:
+            load_from_path = os.path.join(model_train_dir,'model_epoch_{}'.format(epoch))
+            self.load_model(model_path=load_from_path)
+            batch_statistics = {"train_acc": [], "train_loss": [],"current_epoch": epoch}
+
+            for x_batch, y_batch in valid_set: # (1)
+                loss_batch, acc_batch = self.run_evaluation_iter(x_batch,y_batch) # (2)
+                batch_statistics["train_loss"].append(loss_batch)
+                batch_statistics["train_acc"].append(acc_batch)
+
+            statistics_to_save = OrderedDict({"current_epoch":epoch, "eval_acc":0,"eval_loss":0})
+            for key,val in batch_statistics.items():
+                if key not in ["current_epoch"]:
+                    batch_values = np.array(batch_statistics[key])
+                    epoch_val = np.mean(batch_values) # mean of all batch values current epooch
+                    statistics_to_save[key] = np.around(epoch_val,decimals=4)
+
+            print(statistics_to_save)
+            storage_utils.save_statistics(statistics_to_save,eval_results_file_path)
+
+        '''
+        Remarks:
+        (1) x_batch: array (num_batches,-1), y_batch (num_batches,-1) one-hot.
+        (2) loss_batch: tensor(1.9321) type: tensor, acc_batch 0.63 type: numpy.float64.
+        '''
+
+    def save_model(self, model_save_dir,model_save_name):
         state = dict()
         state['network'] = self.state_dict()  # save network parameter and other variables.
-        model_save_name = "model"
-        model_path = os.path.join(model_save_dir, "{}_{}".format(model_save_name, str(current_epoch)))
+        model_path = os.path.join(model_save_dir,model_save_name)
 
         directory = os.path.dirname(model_path)
         if not os.path.exists(directory):
