@@ -18,7 +18,9 @@ class ModifyDataProvider(object):
     @staticmethod
     def get_label_distribution(targets, key='original'):
         cnt = Counter(targets)
+        print(cnt)
         total = sum(cnt.values())
+
         print(total, "total labels")
         for i in range(0, 10): # in case of MNIST
             print("{0}% values of {1} found in {2} dataset.".format(round(cnt[i] / float(total) * 100, 2), i, key))
@@ -32,6 +34,8 @@ class ModifyDataProvider(object):
         count = 0
         inputs_mod, targets_mod = [], []
         n = len(targets)
+
+        # reduce only the 0 class
         for i in range(n):
             if targets[i] == label:
                 count += 1
@@ -39,7 +43,25 @@ class ModifyDataProvider(object):
                     continue
             targets_mod.append(targets[i])
             inputs_mod.append(inputs[i])
-        return inputs_mod, targets_mod
+
+        # every class so that we have same size training datasets
+        total = len(targets_mod)
+        size_per_class = total / 10
+        size_per_class = total / 10
+        cnt = {}
+        for i in range(10):
+            cnt[i] = 0
+        targets_full, inputs_full = [], []
+        for i in range(n):
+            amount = cnt[targets[i]]
+            if amount > size_per_class:
+                continue
+            else:
+                targets_full.append(targets[i])
+                inputs_full.append(inputs[i])
+            cnt[targets[i]] += 1
+
+        return inputs_full, targets_full, inputs_mod, targets_mod
 
 
 class DataProvider(object):

@@ -8,6 +8,7 @@ from tqdm import tqdm
 import sys
 from collections import OrderedDict
 
+
 class Network(torch.nn.Module):
     def __init__(self):
         super(Network, self).__init__()

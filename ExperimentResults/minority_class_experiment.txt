@@ -1,0 +1,3 @@
+Training accuracy changed by -2.06% for label 0, reduction 0.01%
+Training loss changed by 40.14% for label 0, reduction 0.01%
+

@@ -1,79 +1,107 @@
 from mlp.data_providers import MNISTDataProvider, EMNISTDataProvider, ModifyDataProvider
-from mlp.models import MultipleLayerModel
-from mlp.layers import ReluLayer, AffineLayer
-from mlp.errors import CrossEntropySoftmaxError
-from mlp.initialisers import GlorotUniformInit, ConstantInit
-from mlp.learning_rules import AdamLearningRule
-from mlp.optimisers import Optimiser
+from martins_stuff.ModelBuilder.simple_fnn import *
 import numpy as np
+import globals
 import os
 import torch
+import torch.nn as nn
+import torch.optim as optim
+import csv
+
 os.environ['MLP_DATA_DIR'] = 'data'
 
 
 class Experiment(object):
-    def _train(self, model, num_epochs, train_data, valid_data):
-        # Multiclass classification therefore use cross-entropy + softmax error
-        error = CrossEntropySoftmaxError()
+    @staticmethod
+    def _train(model, model_title, train_data, num_epochs, optimizer):
+        saved_models_dir = os.path.join(globals.ROOT_DIR, 'SavedModels/' + model_title)
+        train_results_file = os.path.join(globals.ROOT_DIR, 'ExperimentResults/' + model_title + '.txt')
+        model.train_full(train_data, num_epochs, optimizer, train_results_file, saved_models_dir)
+        with open('ExperimentResults/' + model_title + '.txt', 'r') as f:
+            lines = f.read().splitlines()
+            last_line = lines[-1]
+            train_acc, train_loss = last_line.split('\t')[1:3]
+        return float(train_acc), float(train_loss)
 
-        # Use a momentum learning rule - you could use an adaptive learning rule
-        # implemented for the coursework here instead
-        learning_rule = AdamLearningRule()
-        # Monitor classification accuracy during training
-        data_monitors = {'acc': lambda y, t: (y.argmax(-1) == t.argmax(-1)).mean()}
+    @staticmethod
+    def _evaluate(model, model_title, valid_data, num_epochs):
+        saved_models_dir = os.path.join(globals.ROOT_DIR, 'SavedModels/' + model_title)
+        eval_results_file = os.path.join(globals.ROOT_DIR, 'ExperimentResults/' + model_title + '_eval.txt')
+        model.evaluate_full(valid_data, num_epochs, saved_models_dir, eval_results_file)
 
-        optimiser = Optimiser(model, error, learning_rule, train_data, valid_data, data_monitors)
-        stats_interval = 1
-        stats, keys, run_time = optimiser.train(num_epochs=num_epochs, stats_interval=stats_interval)
-        err_train = stats[len(stats) - 1, keys['error(train)']]
-        err_valid = stats[len(stats) - 1, keys['error(valid)']]
-        acc_train = stats[len(stats) - 1, keys['acc(train)']]
-        acc_valid = stats[len(stats) - 1, keys['error(valid)']]
-        return err_train, err_valid, acc_train, acc_valid
+        with open('ExperimentResults/' + model_title + '_eval.txt', 'r') as f:
+            lines = f.read().splitlines()
+            last_line = lines[-1]
+            valid_acc, valid_loss = last_line.split('\t')[-2:]
+        return float(valid_acc), float(valid_loss)
 
     def _compare(self, model, target_class, target_percentage, num_epochs):
-        train_data = MNISTDataProvider('train', batch_size=100)
-        valid_data = MNISTDataProvider('test', batch_size=100)
+        rng = np.random.RandomState(seed=9112018)
+        train_data = data_providers.MNISTDataProvider('train', batch_size=100, rng=rng, max_num_batches=100)
+        valid_data = MNISTDataProvider('valid', batch_size=100, rng=rng, max_num_batches=100)
 
-        err_train, err_valid, acc_train, acc_valid = self._train(model, num_epochs, train_data, valid_data)
+        optimizer = optim.SGD(model.parameters(), lr=1e-1)
 
+        # get new inputs/targets
         m = ModifyDataProvider()
-        m.get_label_distribution(train_data.targets)
-        inputs, targets = m.modify(target_class, target_percentage, train_data.inputs, train_data.targets)
-        train_data.inputs = np.array(inputs)
-        train_data.targets = np.array(targets)
-        m.get_label_distribution(targets)
+        inputs_full, targets_full, inputs_red, targets_red = m.modify(target_class, target_percentage, train_data.inputs, train_data.targets)
+        inputs_full_valid, targets_full_valid, inputs_red_valid, targets_red_valid = m.modify(target_class, target_percentage, valid_data.inputs, valid_data.targets)
 
-        err_train_comp, err_valid_comp, acc_train_comp, acc_valid_comp = self._train(model, num_epochs, train_data, valid_data)
+        # print(m.get_label_distribution(targets_full, 'full'))
+        # print(m.get_label_distribution(targets_red, 'reduced'))
 
-        acc_valid_diff = ((acc_valid_comp - acc_valid) / float(acc_valid_comp)) * 100
-        acc_train_diff = ((acc_train_comp - acc_train) / float(acc_train_comp)) * 100
-        print("\n===\n")
-        print("Training accuracy changed by {0}%".format(round(acc_train_diff, 2)))
-        print("Validation accuracy changed by {0}%".format(round(acc_valid_diff, 2)))
-        print("\n===\n")
+        # train full
+        train_data.inputs = np.array(inputs_full)
+        train_data.targets = np.array(targets_full)
+        valid_data.inputs = np.array(inputs_full_valid)
+        valid_data.targets = np.array(targets_full_valid)
+        m.get_label_distribution(targets_full_valid, 'full')
+        m.get_label_distribution(targets_red_valid, 'reduced')
+
+        model = SimpleFNN(input_shape=(28, 28), h_out=100, num_classes=10)
+        train_acc_full, train_loss_full = self._train(model, 'full_data_test', train_data, num_epochs, optimizer)
+        valid_acc_full, valid_loss_full = self._evaluate(model, 'full_data_test', valid_data, [i for i in range(num_epochs)])
+
+        # train reduced
+        train_data.inputs = np.array(inputs_red)
+        train_data.targets = np.array(targets_red)
+        valid_data.inputs = np.array(inputs_red_valid)
+        valid_data.targets = np.array(targets_red_valid)
+
+        model = SimpleFNN(input_shape=(28, 28), h_out=100, num_classes=10)
+        train_acc_red, train_loss_red = self._train(model, 'reduced_data_test', train_data, num_epochs, optimizer)
+        valid_acc_red, valid_loss_red = self._evaluate(model, 'reduced_data_test', valid_data, [i for i in range(num_epochs)])
+
+        train_acc_diff = ((train_acc_full - train_acc_red) / float(train_acc_full)) * 100
+        train_loss_diff = ((train_loss_full - train_loss_red) / float(train_loss_full)) * 100
+        valid_acc_diff = ((valid_acc_full - valid_acc_red) / float(valid_acc_full)) * 100
+        valid_loss_diff = ((valid_loss_full - valid_loss_red) / float(valid_loss_full)) * 100
+
+        return train_acc_diff, train_loss_diff, valid_acc_diff, valid_loss_diff
 
     def play(self, target_class, target_percentage):
-        # Seed a random number generator
-        seed = 31102016
-        rng = np.random.RandomState(seed)
-
         # setup hyperparameters
         num_epochs = 100
-        input_dim, output_dim, hidden_dim = 784, 10, 100
-
-        weights_init = GlorotUniformInit(rng=rng)
-        biases_init = ConstantInit(0.)
-        # model = MultipleLayerModel([
-        #     AffineLayer(input_dim, hidden_dim, weights_init, biases_init),
-        #     ReluLayer(),
-        #     AffineLayer(hidden_dim, hidden_dim, weights_init, biases_init),
-        #     ReluLayer(),
-        #     AffineLayer(hidden_dim, output_dim, weights_init, biases_init)
-        # ])
-        model = torch.nn.Linear(input_dim, output_dim)
-        self._compare(model.parameters(), target_class, target_percentage, num_epochs)
+        model = SimpleFNN(input_shape=(28, 28), h_out=100, num_classes=10)
+        train_acc_diff, train_loss_diff, valid_acc_diff, valid_loss_diff = self._compare(model, target_class, target_percentage, num_epochs)
+        return atrain_acc_diff, train_loss_diff, valid_acc_diff, valid_loss_diff
 
 
-Experiment().play(0, .01)
+# with open ('ExperimentResults/minority_class_experiment.txt', 'w') as f:
+def driver():
+    data = {}
+    target_percentage = .01
+    print("Setting percentage reduction to " + str(target_percentage))
+    for i in range(0, 10):
+        train_acc_diff, train_loss_diff, valid_acc_diff, valid_loss_diff = Experiment().play(i, target_percentage)
+        data[i] = {"Target Percentage (in %)": target_percentage * 100, "Label": i, "Train_Acc_Diff": train_acc_diff, "Train_Loss_Diff": train_loss_diff, "Valid_Acc_Diff": valid_acc_diff, "Valid_Loss_Diff": valid_loss_diff}
 
+    with open('data/minority_classes_output.csv', 'w') as csvfile:
+        fieldnames = data[0].keys()
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        for key, values in data.items():
+            writer.writerow(values)
+
+
+driver()
