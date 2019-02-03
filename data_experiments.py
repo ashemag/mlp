@@ -37,8 +37,8 @@ class Experiment(object):
 
     def _compare(self, model, target_class, target_percentage, num_epochs):
         rng = np.random.RandomState(seed=9112018)
-        train_data = data_providers.MNISTDataProvider('train', batch_size=100, rng=rng, max_num_batches=100)
-        valid_data = MNISTDataProvider('valid', batch_size=100, rng=rng, max_num_batches=100)
+        train_data = data_providers.MNISTDataProvider('train', batch_size=50, rng=rng, max_num_batches=100)
+        valid_data = MNISTDataProvider('valid', batch_size=50, rng=rng, max_num_batches=100)
 
         optimizer = optim.SGD(model.parameters(), lr=1e-1)
 
@@ -55,8 +55,8 @@ class Experiment(object):
         train_data.targets = np.array(targets_full)
         valid_data.inputs = np.array(inputs_full_valid)
         valid_data.targets = np.array(targets_full_valid)
-        m.get_label_distribution(targets_full_valid, 'full')
-        m.get_label_distribution(targets_red_valid, 'reduced')
+        # m.get_label_distribution(targets_full_valid, 'full')
+        # m.get_label_distribution(targets_red_valid, 'reduced')
 
         model = SimpleFNN(input_shape=(28, 28), h_out=100, num_classes=10)
         train_acc_full, train_loss_full = self._train(model, 'full_data_test', train_data, num_epochs, optimizer)
