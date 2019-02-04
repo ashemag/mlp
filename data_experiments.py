@@ -67,11 +67,16 @@ class Experiment(object):
         train_data.targets = np.array(targets_red)
         valid_data.inputs = np.array(inputs_red_valid)
         valid_data.targets = np.array(targets_red_valid)
-
         model = SimpleFNN(input_shape=(28, 28), h_out=100, num_classes=10)
-        train_acc_red, train_loss_red = self._train(model, 'reduced_data_test', train_data, num_epochs, optimizer)
-        valid_acc_red, valid_loss_red = self._evaluate(model, 'reduced_data_test', valid_data, [i for i in range(num_epochs)])
+        optimizer = optim.SGD(model.parameters(), lr=1e-1)
 
+        print(len(train_data.inputs), len(train_data.targets))
+
+        train_acc_red, train_loss_red = self._train(model, 'reduced_data_test', train_data, num_epochs, optimizer)
+
+        # valid_acc_red, valid_loss_red = self._evaluate(model, 'reduced_data_test', valid_data, [i for i in range(num_epochs)])
+
+        # calculate differences
         train_acc_diff = ((train_acc_full - train_acc_red) / float(train_acc_full)) * 100
         train_loss_diff = ((train_loss_full - train_loss_red) / float(train_loss_full)) * 100
         valid_acc_diff = ((valid_acc_full - valid_acc_red) / float(valid_acc_full)) * 100
