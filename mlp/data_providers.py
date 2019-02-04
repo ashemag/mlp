@@ -20,10 +20,9 @@ class ModifyDataProvider(object):
         cnt = Counter(targets)
         print(cnt)
         total = sum(cnt.values())
-
-        print(total, "total labels")
-        for i in range(0, 10): # in case of MNIST
-            print("{0}% values of {1} found in {2} dataset.".format(round(cnt[i] / float(total) * 100, 2), i, key))
+        print(cnt)
+        for i, elem in enumerate(cnt.keys()): # in case of MNIST
+            print("{0}% values of {1} found in {2} dataset.".format(round(cnt[elem] / float(total) * 100, 2), elem, key))
 
     @staticmethod
     def modify(label, percentage, inputs, targets):
@@ -34,9 +33,8 @@ class ModifyDataProvider(object):
         count = 0
         inputs_mod, targets_mod = [], []
         n = len(targets)
-
         # reduce only the 0 class
-        for i in range(n):
+        for i in range(total):
             if targets[i] == label:
                 count += 1
                 if count >= target_amount:
@@ -46,9 +44,9 @@ class ModifyDataProvider(object):
 
         # every class so that we have same size training datasets
         total = len(targets_mod)
-        size_per_class = total / 10
+        size_per_class = total / 47
         cnt = {}
-        for i in range(10):
+        for i in range(47):
             cnt[i] = 0
         inputs_full, targets_full = [], []
         for i in range(n):

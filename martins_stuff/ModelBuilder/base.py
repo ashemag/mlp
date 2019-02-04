@@ -43,7 +43,7 @@ class Network(torch.nn.Module):
         if y_batch_pred is None:
             y_batch_pred = self(x_batch)
 
-        y_batch_int =  np.argmax(y_batch,axis=1)
+        y_batch_int = np.argmax(y_batch,axis=1)
         y_batch_int = torch.Tensor(y_batch_int).long().to(device=self.device)
         _, y_pred_batch_int = torch.max(y_batch_pred.data, 1)  # argmax of predictions
         acc = np.mean(list(y_pred_batch_int.eq(y_batch_int.data).cpu()))  # compute accuracy

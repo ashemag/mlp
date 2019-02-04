@@ -37,8 +37,8 @@ class Experiment(object):
 
     def _compare(self, model, target_class, target_percentage, num_epochs):
         rng = np.random.RandomState(seed=9112018)
-        train_data = data_providers.MNISTDataProvider('train', batch_size=100, rng=rng, max_num_batches=100)
-        valid_data = MNISTDataProvider('valid', batch_size=50, rng=rng, max_num_batches=100)
+        train_data = data_providers.EMNISTDataProvider('train', batch_size=100, rng=rng, max_num_batches=100)
+        valid_data = EMNISTDataProvider('valid', batch_size=50, rng=rng, max_num_batches=100)
 
 
         #  Get new inputs/targets
@@ -46,22 +46,22 @@ class Experiment(object):
         inputs_full, targets_full, inputs_red, targets_red = m.modify(target_class, target_percentage, train_data.inputs, train_data.targets)
         inputs_full_valid, targets_full_valid, inputs_red_valid, targets_red_valid = m.modify(target_class, target_percentage, valid_data.inputs, valid_data.targets)
 
-        # print(m.get_label_distribution(targets_full, 'full'))
-        # print(m.get_label_distribution(targets_red, 'reduced'))
-
+        # m.get_label_distribution(targets_full, 'full')
+        # m.get_label_distribution(targets_red, 'reduced')
+        # exit()
         # TRAIN FULL
         train_data.inputs = inputs_full
         train_data.targets = targets_full
         valid_data.inputs = inputs_full_valid
         valid_data.targets = targets_full_valid
-        model = SimpleFNN(input_shape=(28, 28), h_out=100, num_classes=10)
+        model = SimpleFNN(input_shape=(28, 28), h_out=100, num_classes=47)
         optimizer = optim.SGD(model.parameters(), lr=1e-1)
         train_acc_full, train_loss_full = self._train(model, 'full_data_test', train_data, num_epochs, optimizer)
         valid_acc_full, valid_loss_full = self._evaluate(model, 'full_data_test', valid_data, [i for i in range(num_epochs)])
 
 
         # TRAIN REDUCED
-        model = SimpleFNN(input_shape=(28, 28), h_out=100, num_classes=10)
+        model = SimpleFNN(input_shape=(28, 28), h_out=100, num_classes=47)
         optimizer = optim.SGD(model.parameters(), lr=1e-1)
 
         train_data = data_providers.MNISTDataProvider('train', batch_size=100, rng=rng, max_num_batches=100)
