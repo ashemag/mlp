@@ -47,11 +47,10 @@ class ModifyDataProvider(object):
         # every class so that we have same size training datasets
         total = len(targets_mod)
         size_per_class = total / 10
-        size_per_class = total / 10
         cnt = {}
         for i in range(10):
             cnt[i] = 0
-        targets_full, inputs_full = [], []
+        inputs_full, targets_full = [], []
         for i in range(n):
             amount = cnt[targets[i]]
             if amount > size_per_class:
@@ -61,6 +60,10 @@ class ModifyDataProvider(object):
                 inputs_full.append(inputs[i])
             cnt[targets[i]] += 1
 
+        inputs_full = np.array(inputs_full)
+        targets_full = np.array(targets_full)
+        targets_mod = np.array(targets_mod)
+        inputs_mod = np.array(inputs_mod)
         return inputs_full, targets_full, inputs_mod, targets_mod
 
 

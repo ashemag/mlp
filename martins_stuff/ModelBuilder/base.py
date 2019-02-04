@@ -98,7 +98,7 @@ class Network(torch.nn.Module):
             epoch_start_time = time.time()
             batch_statistics = {"train_acc": [], "train_loss": []}
 
-            for i,(x_train_batch, y_train_batch) in tqdm(enumerate(self.train_data),file=sys.stdout):  # get data batches
+            for i,(x_train_batch, y_train_batch) in tqdm(enumerate(self.train_data), file=sys.stdout):  # get data batches
                 loss_batch, accuracy_batch = self.train_iter(x_train_batch, y_train_batch)  # take a training iter step
                 batch_statistics["train_loss"].append(loss_batch)  # add current iter loss to the train loss list
                 batch_statistics["train_acc"].append(accuracy_batch)  # add current iter acc to the train acc list
