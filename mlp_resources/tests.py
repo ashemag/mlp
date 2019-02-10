@@ -1,5 +1,5 @@
-from mlp.learning_rules import AdamLearningRuleWithWeightDecay
-from mlp.schedulers import CosineAnnealingWithWarmRestarts
+from mlp_resources.learning_rules import AdamLearningRuleWithWeightDecay
+from mlp_resources.schedulers import CosineAnnealingWithWarmRestarts
 import numpy as np
 
 def test_adam_with_weight_decay():
@@ -18,7 +18,7 @@ def test_adam_with_weight_decay():
 
 
 def test_cosine_scheduler():
-    from mlp.learning_rules import AdamLearningRule
+    from mlp_resources.learning_rules import AdamLearningRule
     loaded = np.load("../data/cosine_scheduler_correct_test_results.npz")
     learning_rule = AdamLearningRule()
     correct_learning_rates, epoch_idx = loaded['learning_rates'], loaded['epoch_idx']

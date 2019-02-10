@@ -6,3 +6,4 @@ __pycache__/
 SavedModels/
 ExperimentResults/
 data/
+*.pyc

@@ -1,5 +1,5 @@
-from mlp.data_providers import MNISTDataProvider, EMNISTDataProvider, ModifyDataProvider
-from martins_stuff.ModelBuilder.simple_fnn import *
+from mlp_resources.data_providers import *
+from ModelBuilder.simple_fnn import *
 import numpy as np
 import globals
 import os
@@ -125,4 +125,9 @@ def driver():
             writer.writerow(values)
 
 
-driver()
+def cifar_driver():
+    trainset = CIFAR10(root='data', train=True, download=True, transform=transform_train)
+
+
+
+# driver()

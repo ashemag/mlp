@@ -13,8 +13,8 @@ respect to the layer parameters.
 """
 
 import numpy as np
-import mlp.initialisers as init
-from mlp import DEFAULT_SEED
+import mlp_resources.initialisers as init
+from mlp_resources import DEFAULT_SEED
 
 
 class Layer(object):

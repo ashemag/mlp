@@ -5,7 +5,7 @@ This module defines classes to initialise the parameters in a layer.
 """
 
 import numpy as np
-from mlp import DEFAULT_SEED
+from mlp_resources import DEFAULT_SEED
 
 
 class ConstantInit(object):
