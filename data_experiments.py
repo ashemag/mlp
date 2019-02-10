@@ -35,17 +35,30 @@ class Experiment(object):
                 eval_acc, eval_loss = float(row['train_acc']), float(row['train_loss']) #bug in code
         return eval_acc, eval_loss
 
+    @staticmethod
+    def _process_EMNIST(inputs):
+        samples, _, height, width = inputs.shape
+        return inputs.reshape(samples, height * width)
+
     def _compare(self, model, target_class, target_percentage, num_epochs):
         rng = np.random.RandomState(seed=9112018)
         train_data = data_providers.EMNISTDataProvider('train', batch_size=100, rng=rng, max_num_batches=100)
         valid_data = EMNISTDataProvider('valid', batch_size=50, rng=rng, max_num_batches=100)
+
+        model = SimpleFNN(input_shape=(28, 28), h_out=100, num_classes=47)
+        optimizer = optim.SGD(model.parameters(), lr=1e-1)
+
+        # EMNIST processing
+        train_data.inputs = self._process_EMNIST(train_data.inputs)
+        valid_data.inputs = self._process_EMNIST(valid_data.inputs)
 
 
         #  Get new inputs/targets
         m = ModifyDataProvider()
         inputs_full, targets_full, inputs_red, targets_red = m.modify(target_class, target_percentage, train_data.inputs, train_data.targets)
         inputs_full_valid, targets_full_valid, inputs_red_valid, targets_red_valid = m.modify(target_class, target_percentage, valid_data.inputs, valid_data.targets)
-
+        # print(inputs_full.shape)
+        # exit()
         # m.get_label_distribution(targets_full, 'full')
         # m.get_label_distribution(targets_red, 'reduced')
         # exit()
@@ -54,8 +67,7 @@ class Experiment(object):
         train_data.targets = targets_full
         valid_data.inputs = inputs_full_valid
         valid_data.targets = targets_full_valid
-        model = SimpleFNN(input_shape=(28, 28), h_out=100, num_classes=47)
-        optimizer = optim.SGD(model.parameters(), lr=1e-1)
+
         train_acc_full, train_loss_full = self._train(model, 'full_data_test', train_data, num_epochs, optimizer)
         valid_acc_full, valid_loss_full = self._evaluate(model, 'full_data_test', valid_data, [i for i in range(num_epochs)])
 
@@ -64,8 +76,12 @@ class Experiment(object):
         model = SimpleFNN(input_shape=(28, 28), h_out=100, num_classes=47)
         optimizer = optim.SGD(model.parameters(), lr=1e-1)
 
-        train_data = data_providers.MNISTDataProvider('train', batch_size=100, rng=rng, max_num_batches=100)
-        valid_data = MNISTDataProvider('valid', batch_size=50, rng=rng, max_num_batches=100)
+        train_data = data_providers.EMNISTDataProvider('train', batch_size=100, rng=rng, max_num_batches=100)
+        valid_data = EMNISTDataProvider('valid', batch_size=50, rng=rng, max_num_batches=100)
+
+        # EMNIST processing
+        train_data.inputs = self._process_EMNIST(train_data.inputs)
+        valid_data.inputs = self._process_EMNIST(valid_data.inputs)
 
         train_data.inputs = inputs_red
         train_data.targets = targets_red
@@ -94,9 +110,10 @@ class Experiment(object):
 
 def driver():
     data = {}
-    target_percentage = .01
+    target_percentage = .005
     print("Setting percentage reduction to " + str(target_percentage))
     for i in range(0, 10):
+        print("ON LABEL {0}".format(i))
         train_acc_diff, train_loss_diff, valid_acc_diff, valid_loss_diff = Experiment().play(i, target_percentage)
         data[i] = {"Target Percentage (in %)": target_percentage * 100, "Label": i, "Train_Acc_Diff (%)": train_acc_diff, "Train_Loss_Diff (%)": train_loss_diff, "Valid_Acc_Diff (%)": valid_acc_diff, "Valid_Loss_Diff (%)": valid_loss_diff}
         break

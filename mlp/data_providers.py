@@ -18,7 +18,6 @@ class ModifyDataProvider(object):
     @staticmethod
     def get_label_distribution(targets, key='original'):
         cnt = Counter(targets)
-        print(cnt)
         total = sum(cnt.values())
         print(cnt)
         for i, elem in enumerate(cnt.keys()): # in case of MNIST
@@ -41,7 +40,6 @@ class ModifyDataProvider(object):
                     continue
             targets_mod.append(targets[i])
             inputs_mod.append(inputs[i])
-
         # every class so that we have same size training datasets
         total = len(targets_mod)
         size_per_class = total / 47
