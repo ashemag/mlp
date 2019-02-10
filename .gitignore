@@ -4,3 +4,5 @@
 mlp/
 __pycache__/
 SavedModels/
+ExperimentResults/
+data/
