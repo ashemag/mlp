@@ -42,71 +42,30 @@ class Experiment(object):
         samples, _, height, width = inputs.shape
         return inputs.reshape(samples, height * width)
 
-    def _compare(self, model, target_class, target_percentage, num_epochs):
+    def _compare(self, train_data_full, train_data_mod, test_data):
         rng = np.random.RandomState(seed=9112018)
-        train_data = data_providers.EMNISTDataProvider('train', batch_size=100, rng=rng, max_num_batches=100)
-        valid_data = EMNISTDataProvider('valid', batch_size=50, rng=rng, max_num_batches=100)
+        num_epochs = 100
 
-        model = SimpleFNN(input_shape=(28, 28), h_out=100, num_classes=47)
-        optimizer = optim.SGD(model.parameters(), lr=1e-1)
-
-        # EMNIST processing
-        train_data.inputs = self._process_EMNIST(train_data.inputs)
-        valid_data.inputs = self._process_EMNIST(valid_data.inputs)
-
-
-        #  Get new inputs/targets
-        m = ModifyDataProvider()
-        inputs_full, targets_full, inputs_red, targets_red = m.modify(target_class, target_percentage, train_data.inputs, train_data.targets)
-        inputs_full_valid, targets_full_valid, inputs_red_valid, targets_red_valid = m.modify(target_class, target_percentage, valid_data.inputs, valid_data.targets)
-        # print(inputs_full.shape)
-        # exit()
-        # m.get_label_distribution(targets_full, 'full')
-        # m.get_label_distribution(targets_red, 'reduced')
-        # exit()
         # TRAIN FULL
-        train_data.inputs = inputs_full
-        train_data.targets = targets_full
-        valid_data.inputs = inputs_full_valid
-        valid_data.targets = targets_full_valid
-
-        train_acc_full, train_loss_full = self._train(model, 'full_data_test', train_data, num_epochs, optimizer)
-        valid_acc_full, valid_loss_full = self._evaluate(model, 'full_data_test', valid_data, [i for i in range(num_epochs)])
-
+        model_full = SimpleFNN(input_shape=(28, 28), h_out=100, num_classes=10)
+        optimizer = optim.SGD(model_full.parameters(), lr=1e-1)
+        train_acc_full, train_loss_full = self._train(model_full, 'full_data_test', train_data_full, num_epochs, optimizer)
+        valid_acc_full, valid_loss_full = self._evaluate(model_full, 'full_data_test', test_data,
+                                                         [i for i in range(num_epochs)])
 
         # TRAIN REDUCED
-        model = SimpleFNN(input_shape=(28, 28), h_out=100, num_classes=47)
-        optimizer = optim.SGD(model.parameters(), lr=1e-1)
-
-        train_data = data_providers.EMNISTDataProvider('train', batch_size=100, rng=rng, max_num_batches=100)
-        valid_data = EMNISTDataProvider('valid', batch_size=50, rng=rng, max_num_batches=100)
-
-        # EMNIST processing
-        train_data.inputs = self._process_EMNIST(train_data.inputs)
-        valid_data.inputs = self._process_EMNIST(valid_data.inputs)
-
-        train_data.inputs = inputs_red
-        train_data.targets = targets_red
-        valid_data.inputs = inputs_red_valid
-        valid_data.targets = targets_red_valid
-
-        train_acc_red, train_loss_red = self._train(model, 'reduced_data_test', train_data, num_epochs, optimizer)
-        valid_acc_red, valid_loss_red = self._evaluate(model, 'reduced_data_test', valid_data, [i for i in range(num_epochs)])
+        model_mod = SimpleFNN(input_shape=(28, 28), h_out=100, num_classes=10)
+        optimizer = optim.SGD(model_full.parameters(), lr=1e-1)
+        train_acc_mod, train_loss_mod = self._train(model_mod, 'full_data_test', train_data_mod, num_epochs, optimizer)
+        valid_acc_mod, valid_loss_mod = self._evaluate(model_mod, 'full_data_test', test_data,
+                                                         [i for i in range(num_epochs)])
 
         # calculate differences
-        train_acc_diff = ((train_acc_red - train_acc_full) / float(train_acc_red)) * 100
-        train_loss_diff = ((train_loss_red - train_loss_full) / float(train_loss_red)) * 100
-        valid_acc_diff = ((valid_acc_red - valid_acc_full) / float(train_acc_red)) * 100
-        valid_loss_diff = ((valid_loss_red - valid_loss_full) / float(valid_loss_red)) * 100
+        train_acc_diff = ((train_acc_mod - train_acc_full) / float(train_acc_mod)) * 100
+        train_loss_diff = ((train_loss_mod - train_loss_full) / float(train_loss_mod)) * 100
+        valid_acc_diff = ((valid_acc_mod - valid_acc_full) / float(train_acc_mod)) * 100
+        valid_loss_diff = ((valid_loss_mod - valid_loss_full) / float(valid_loss_mod)) * 100
 
-        return train_acc_diff, train_loss_diff, valid_acc_diff, valid_loss_diff
-        # return 0, 0, 0, 0
-
-    def play(self, target_class, target_percentage):
-        # setup hyperparameters
-        num_epochs = 100
-        model = SimpleFNN(input_shape=(28, 28), h_out=100, num_classes=10)
-        train_acc_diff, train_loss_diff, valid_acc_diff, valid_loss_diff = self._compare(model, target_class, target_percentage, num_epochs)
         return train_acc_diff, train_loss_diff, valid_acc_diff, valid_loss_diff
 
 
@@ -135,38 +94,32 @@ def unpickle(file):
 
 
 def cifar_driver():
-    # data_transform = transforms.Compose([
-    #     transforms.RandomSizedCrop(224),
-    #     transforms.RandomHorizontalFlip(),
-    #     transforms.ToTensor(),
-    #     transforms.Normalize(mean=[0.485, 0.456, 0.406],
-    #                          std=[0.229, 0.224, 0.225])
-    # ])
-    # train_set = CIFAR10(root='data', train=True, download=True, transform=data_transform)
-    # train_data = torch.utils.data.DataLoader(train_set, batch_size=128, shuffle=True, num_workers=2)
     d = unpickle('data/cifar-10-batches-py/batches.meta')
     labels = d[b'label_names']
-    # for i_batch, sample_batched in enumerate(train_data):
-    #     # print(i_batch, sample_batched[1])
-    #     label_index = sample_batched[1]
-    #     print(label_index)
-    #     exit()
-    #     print(labels[label_index])
     m = ModifyDataProvider()
     train_set = CIFAR10(root='data', set_name='train')
-    print(train_set)
     inputs = [i[0] for i in train_set]
     labels = [labels[i[1]] for i in train_set]
     m.get_label_distribution(labels)
-    inputs, targets = m.modify(b'horse', .01, inputs, labels)
-    m.get_label_distribution(targets)
-    exit()
-    for i_batch, sample_batched in enumerate(train_set):
-        img, target = sample_batched
-        label = labels[target]
-        print(label)
-        exit()
+
+    target_percentage = .01
+    label = b'horse'
+    inputs_full, targets_full, inputs_mod, targets_mod = m.modify(label, target_percentage, inputs, labels)
+    m.get_label_distribution(targets_full)
+
+    # get test data
+    test_set = CIFAR10(root='data', set_name='test')
+    m.get_label_distribution([labels[i[1]] for i in test_set], "Test Set Full")
+
+    train_set_full = zip(inputs_full, targets_full)
+    train_set_mod = zip(inputs_mod, targets_mod)
+
+    train_acc_diff, train_loss_diff, valid_acc_diff, valid_loss_diff = Experiment()._compare(train_set_full, train_set_mod, test_set)
+    output = {"Target Percentage (in %)": target_percentage * 100, "Label": label,
+              "Train_Acc_Diff (%)": train_acc_diff, "Train_Loss_Diff (%)": train_loss_diff,
+              "Valid_Acc_Diff (%)": valid_acc_diff, "Valid_Loss_Diff (%)": valid_loss_diff}
+    print(output)
 
 
-# driver()
+# driver
 cifar_driver()

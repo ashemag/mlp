@@ -30,7 +30,8 @@ class ModifyDataProvider(object):
     def get_label_distribution(targets, key='original'):
         cnt = Counter(targets)
         total = sum(cnt.values())
-        print(cnt)
+        print("\n===\n")
+        print("{0}: TOTAL VALUES {1}".format(key, len(targets)))
         for i, elem in enumerate(cnt.keys()): # in case of MNIST
             print("{0}% values of {1} found in {2} dataset.".format(round(cnt[elem] / float(total) * 100, 2), elem, key))
 
@@ -52,29 +53,29 @@ class ModifyDataProvider(object):
             targets_mod.append(targets[i])
             inputs_mod.append(inputs[i])
 
-        # every class so that we have same size training datasets
+        # reduce every class so that we have same size training datasets
         total = len(targets_mod)
         size_per_class = total / len(set(targets_mod))
         cnt = {}
 
         inputs_full, targets_full = [], []
-        for i in range(n):
-            if targets[i] not in cnt:
+        for i, target in enumerate(targets):
+            if target not in cnt:
                 amount = 1
-                cnt[targets[i]] = amount
+                cnt[target] = amount
             else:
-                amount = cnt[targets[i]]
+                amount = cnt[target]
             if amount > size_per_class:
                 continue
             else:
                 targets_full.append(targets[i])
                 inputs_full.append(inputs[i])
-            cnt[targets[i]] += 1
+            cnt[target] += 1
 
-        inputs_full = np.array(inputs_full)
-        targets_full = np.array(targets_full)
-        targets_mod = np.array(targets_mod)
-        inputs_mod = np.array(inputs_mod)
+        # inputs_full = np.array(inputs_full)
+        # targets_full = np.array(targets_full)
+        # targets_mod = np.array(targets_mod)
+        # inputs_mod = np.array(inputs_mod)
         return inputs_full, targets_full, inputs_mod, targets_mod
 
 
