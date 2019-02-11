@@ -1,5 +1,5 @@
-from martins_stuff import data_providers
-from martins_stuff.ModelBuilder.simple_fnn import SimpleFNN
+import data_providers
+from ModelBuilder.simple_fnn import SimpleFNN
 import matplotlib.pyplot as plt
 import numpy as np
 import torch

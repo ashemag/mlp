@@ -1,12 +1,20 @@
 from mlp import data_providers
-from martins_stuff.ModelBuilder.base import Network
+from ModelBuilder.base import Network
 import numpy as np
 import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
-
 import globals
+from torchvision.models.densenet import DenseNet
+
+class Temp(DenseNet,Network):
+    def __init_(self):
+        Network.__init__(self)
+        DenseNet.__init__(self)
+
+        print("here")
+
 
 class SimpleFNN(Network):
 
@@ -28,6 +36,13 @@ class SimpleFNN(Network):
         pred = self.output_layer(pred)
         # note: output not softmax because CrossEntropyLoss in pytorch does the softmax transform for you
         return pred
+
+def test_subclassing():
+    print("tetsing")
+    obj = Temp()
+
+    pass
+
 
 def test_load_model():
     '''
@@ -76,7 +91,8 @@ def test_evaluating():
 
 def main():
     #test_train_and_save()
-    test_evaluating()
+    #test_evaluating()
+    test_subclassing()
 
     pass
 

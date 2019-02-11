@@ -1,5 +1,5 @@
 from mlp.data_providers import MNISTDataProvider, EMNISTDataProvider, ModifyDataProvider
-from martins_stuff.ModelBuilder.simple_fnn import *
+from ModelBuilder.simple_fnn import *
 import numpy as np
 import globals
 import os
