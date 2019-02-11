@@ -38,22 +38,23 @@ class ModifyDataProvider(object):
     def modify(label, percentage, inputs, targets):
         """ Reduce appearance of a specified class (label) in dataset
         """
+        # reduce presence of one class
         total = len(targets)
         target_amount = total * percentage
         count = 0
         inputs_mod, targets_mod = [], []
         n = len(targets)
-        # reduce only the 0 class
         for i in range(total):
-            if targets[i] == label:
+            if targets[i] == label:  # reduce only the label class
                 count += 1
                 if count >= target_amount:
                     continue
             targets_mod.append(targets[i])
             inputs_mod.append(inputs[i])
+
         # every class so that we have same size training datasets
         total = len(targets_mod)
-        size_per_class = total / 47
+        size_per_class = total / len(set(targets_mod))
         cnt = {}
 
         inputs_full, targets_full = [], []

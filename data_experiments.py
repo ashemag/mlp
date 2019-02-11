@@ -125,11 +125,13 @@ def driver():
         for key, values in data.items():
             writer.writerow(values)
 
+
 def unpickle(file):
     import pickle
     with open(file, 'rb') as fo:
         dict = pickle.load(fo, encoding='bytes')
     return dict
+
 
 def cifar_driver():
     # data_transform = transforms.Compose([
