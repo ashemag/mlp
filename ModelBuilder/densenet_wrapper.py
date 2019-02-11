@@ -10,6 +10,8 @@ from collections import OrderedDict
 from torchvision.models.densenet import _DenseBlock
 from torchvision.models.densenet import _Transition
 
+from mlp_resources.data_providers import CIFAR10
+
 class DenseNetWrapper(DenseNet,Network):
     def __init__(self,in_channels=3,growth_rate=32, block_config=(6, 12, 24, 16),num_init_features=64, bn_size=4, drop_rate=0, num_classes=1000):
         Network.__init__(self)
@@ -85,38 +87,69 @@ class TestNetwork(nn.Module):
         num_init_features = 64
         num_features = num_init_features
 
-
-
-
-
-
         return pred
 
 
 
 
 def test_forward_pass():
-    from mlp import data_providers
+    from mlp_resources import data_providers
     import numpy as np
     import data_providers
 
-    rng = np.random.RandomState(seed=9112018)
-    valid_data = data_providers.MNISTDataProvider('valid', batch_size=100, rng=rng, max_num_batches=100)
-    x, y = valid_data.next()
+    #rng = np.random.RandomState(seed=9112018)
+    #valid_data = data_providers.MNISTDataProvider('valid', batch_size=100, rng=rng, max_num_batches=100)
+    from globals import ROOT_DIR
+    import os
 
-    x = np.reshape(x,(100,1,28,28))
-    print("x shape: {}, x type: {}, y shape: {}, y type: {}".format(x.shape,y.shape,type(x),type(y)))
+    data_dir = os.path.join(ROOT_DIR,'data')
+    data = CIFAR10(root=data_dir,set_name='test',download=True) # if not train then test
 
-    x_tens = torch.Tensor(x).float()
-    model = DenseNetWrapper(in_channels=1)
-    model_test = TestNetwork()
-    pred = model_test(x_tens)
+    x_img, y = data[0] # img, target = self.data[index], self.labels[index]
+    x = np.array(x_img)
 
-    #pred = model(x_tens)
+    x = np.transpose(x,(2,1,0))
 
-    print(pred.size())
+    print(x.shape)
 
-    print("success")
+
+
+
+
+    '''
+
+    def __init__(self, root, set_name,
+                 transform=None, target_transform=None,
+                 download=False):
+
+    '''
+
+
+    '''
+
+    def __init__(self, root, set_name,
+                 transform=None, target_transform=None,
+                 download=False):
+
+    '''
+
+
+
+
+    # x, y = valid_data.next()
+    # x = np.reshape(x,(100,1,28,28))
+    # print("x shape: {}, x type: {}, y shape: {}, y type: {}".format(x.shape,y.shape,type(x),type(y)))
+    #
+    # x_tens = torch.Tensor(x).float()
+    # model = DenseNetWrapper(in_channels=1)
+    # model_test = TestNetwork()
+    # pred = model_test(x_tens)
+    #
+    # #pred = model(x_tens)
+    #
+    # print(pred.size())
+    #
+    # print("success")
 
 
     pass
