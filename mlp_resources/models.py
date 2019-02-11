@@ -8,7 +8,7 @@ outputs (and intermediate states) and for calculating gradients of scalar
 functions of the outputs with respect to the model parameters.
 """
 
-from mlp.layers import LayerWithParameters, StochasticLayer, StochasticLayerWithParameters
+from mlp_resources.layers import LayerWithParameters, StochasticLayer, StochasticLayerWithParameters
 
 
 class SingleLayerModel(object):

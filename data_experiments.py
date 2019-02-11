@@ -1,4 +1,5 @@
 from mlp.data_providers import MNISTDataProvider, EMNISTDataProvider, ModifyDataProvider
+from mlp_resources.data_providers import *
 from ModelBuilder.simple_fnn import *
 import numpy as np
 import globals
@@ -7,6 +8,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import csv
+from torchvision import transforms, datasets
 
 os.environ['MLP_DATA_DIR'] = 'data'
 
@@ -124,5 +126,45 @@ def driver():
         for key, values in data.items():
             writer.writerow(values)
 
+def unpickle(file):
+    import pickle
+    with open(file, 'rb') as fo:
+        dict = pickle.load(fo, encoding='bytes')
+    return dict
 
-driver()
+def cifar_driver():
+    # data_transform = transforms.Compose([
+    #     transforms.RandomSizedCrop(224),
+    #     transforms.RandomHorizontalFlip(),
+    #     transforms.ToTensor(),
+    #     transforms.Normalize(mean=[0.485, 0.456, 0.406],
+    #                          std=[0.229, 0.224, 0.225])
+    # ])
+    # train_set = CIFAR10(root='data', train=True, download=True, transform=data_transform)
+    # train_data = torch.utils.data.DataLoader(train_set, batch_size=128, shuffle=True, num_workers=2)
+    d = unpickle('data/cifar-10-batches-py/batches.meta')
+    labels = d[b'label_names']
+    # for i_batch, sample_batched in enumerate(train_data):
+    #     # print(i_batch, sample_batched[1])
+    #     label_index = sample_batched[1]
+    #     print(label_index)
+    #     exit()
+    #     print(labels[label_index])
+    m = ModifyDataProvider()
+    train_set = CIFAR10(root='data', set_name='train')
+    print(train_set)
+    inputs = [i[0] for i in train_set]
+    labels = [labels[i[1]] for i in train_set]
+    m.get_label_distribution(labels)
+    inputs, targets = m.modify(b'horse', .01, inputs, labels)
+    m.get_label_distribution(targets)
+    exit()
+    for i_batch, sample_batched in enumerate(train_set):
+        img, target = sample_batched
+        label = labels[target]
+        print(label)
+        exit()
+
+
+# driver()
+cifar_driver()

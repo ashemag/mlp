@@ -1,4 +1,5 @@
-from mlp import data_providers
+from mlp import data_provider
+from mlp_resources import data_providers
 from ModelBuilder.base import Network
 import numpy as np
 import os

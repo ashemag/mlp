@@ -9,7 +9,7 @@ import pickle
 import gzip
 import numpy as np
 import os
-from mlp import DEFAULT_SEED
+from mlp_resources import DEFAULT_SEED
 import random
 
 from globals import ROOT_DIR
