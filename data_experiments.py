@@ -1,5 +1,6 @@
 from mlp_resources.data_providers import *
 from ModelBuilder.simple_fnn import *
+from ModelBuilder.cnn import *
 import numpy as np
 import globals
 import os
@@ -46,15 +47,18 @@ class Experiment(object):
         num_epochs = 100
 
         # TRAIN FULL
-        model_full = SimpleFNN(input_shape=(28, 28), h_out=100, num_classes=10)
-        optimizer = optim.SGD(model_full.parameters(), lr=1e-1)
+        # model_full = SimpleFNN(input_shape=(32, 32), h_out=100, num_classes=10)
+        # optimizer = optim.SGD(model_full.parameters(), lr=1e-1)
+        # train_acc_full, train_loss_full = self._train(model_full, 'full_data_test', train_data_full, num_epochs, optimizer)
+        model_full = CNNNet(3, 32, 32)
+        optimizer = optim.SGD(model_full.parameters(), lr=0.001, momentum=0.9)
         train_acc_full, train_loss_full = self._train(model_full, 'full_data_test', train_data_full, num_epochs, optimizer)
         valid_acc_full, valid_loss_full = self._evaluate(model_full, 'full_data_test', test_data,
                                                          [i for i in range(num_epochs)])
 
         # TRAIN REDUCED
-        model_mod = SimpleFNN(input_shape=(28, 28), h_out=100, num_classes=10)
-        optimizer = optim.SGD(model_full.parameters(), lr=1e-1)
+        model_mod = CNNNet(3, 32, 32)
+        optimizer = optim.SGD(model_mod.parameters(), lr=0.001, momentum=0.9)
         train_acc_mod, train_loss_mod = self._train(model_mod, 'full_data_test', train_data_mod, num_epochs, optimizer)
         valid_acc_mod, valid_loss_mod = self._evaluate(model_mod, 'full_data_test', test_data,
                                                          [i for i in range(num_epochs)])
@@ -93,25 +97,36 @@ def unpickle(file):
 
 
 def cifar_driver():
+    transform = transforms.Compose(
+        [transforms.ToTensor(),
+         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+
     d = unpickle('data/cifar-10-batches-py/batches.meta')
     labels = d[b'label_names']
+
     m = ModifyDataProvider()
-    train_set = CIFAR10(root='data', set_name='train')
-    inputs = [i[0] for i in train_set]
-    labels = [labels[i[1]] for i in train_set]
-    m.get_label_distribution(labels)
+    train_set = CIFAR10(root='data', set_name='train', transform=transform)
+
+    # convert inputs to numpy array instead of PIL Image
+    inputs = [np.array(i[0]) for i in train_set]
+    targets = [i[1] for i in train_set]
+    # m.get_label_distribution([labels[i] for i in targets])
 
     target_percentage = .01
     label = b'horse'
-    inputs_full, targets_full, inputs_mod, targets_mod = m.modify(label, target_percentage, inputs, labels)
-    m.get_label_distribution(targets_full)
+    inputs_full, targets_full, inputs_mod, targets_mod = m.modify(label, target_percentage, inputs, targets)
+    # m.get_label_distribution([labels[i] for i in targets_full])
 
-    # get test data
-    test_set = CIFAR10(root='data', set_name='test')
-    m.get_label_distribution([labels[i[1]] for i in test_set], "Test Set Full")
+    # PROCESS test data
+    test_set = CIFAR10(root='data', set_name='test', transform=transform)
+    # m.get_label_distribution([labels[i[1]] for i in test_set], "Test Set Full")
+    inputs = np.array([np.array(i[0]) for i in test_set])
+    targets = np.array([i[1] for i in test_set])
+    test_set = DataProvider(inputs, targets, batch_size=100)
 
-    train_set_full = zip(inputs_full, targets_full)
-    train_set_mod = zip(inputs_mod, targets_mod)
+    # TRAIN
+    train_set_full = DataProvider(inputs_full, targets_full, batch_size=100)
+    train_set_mod = DataProvider(inputs_mod, targets_mod, batch_size=100)
 
     train_acc_diff, train_loss_diff, valid_acc_diff, valid_loss_diff = Experiment()._compare(train_set_full, train_set_mod, test_set)
     output = {"Target Percentage (in %)": target_percentage * 100, "Label": label,

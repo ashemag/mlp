@@ -72,10 +72,10 @@ class ModifyDataProvider(object):
                 inputs_full.append(inputs[i])
             cnt[target] += 1
 
-        # inputs_full = np.array(inputs_full)
-        # targets_full = np.array(targets_full)
-        # targets_mod = np.array(targets_mod)
-        # inputs_mod = np.array(inputs_mod)
+        inputs_full = np.array(inputs_full)
+        targets_full = np.array(targets_full)
+        targets_mod = np.array(targets_mod)
+        inputs_mod = np.array(inputs_mod)
         return inputs_full, targets_full, inputs_mod, targets_mod
 
 
@@ -101,7 +101,8 @@ class DataProvider(object):
             rng (RandomState): A seeded random number generator.
         """
         self.inputs = inputs
-        self.targets = targets
+        self.num_classes = len(set(targets))
+        self.targets = self.to_one_of_k(targets)
         if batch_size < 1:
             raise ValueError('batch_size must be >= 1')
         self._batch_size = batch_size
@@ -184,6 +185,25 @@ class DataProvider(object):
         self._current_order = self._current_order[perm]
         self.inputs = self.inputs[perm]
         self.targets = self.targets[perm]
+
+    def to_one_of_k(self, int_targets):
+        """Converts integer coded class target to 1 of K coded targets.
+
+        Args:
+            int_targets (ndarray): Array of integer coded class targets (i.e.
+                where an integer from 0 to `num_classes` - 1 is used to
+                indicate which is the correct class). This should be of shape
+                (num_data,).
+
+        Returns:
+            Array of 1 of K coded targets i.e. an array of shape
+            (num_data, num_classes) where for each row all elements are equal
+            to zero except for the column corresponding to the correct class
+            which is equal to one.
+        """
+        one_of_k_targets = np.zeros((int_targets.shape[0], self.num_classes))
+        one_of_k_targets[range(int_targets.shape[0]), int_targets] = 1
+        return one_of_k_targets
 
     def next(self):
         """Returns next data batch or raises `StopIteration` if at end."""

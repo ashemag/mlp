@@ -5,17 +5,19 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
-
 import globals
+
 
 class SimpleFNN(Network):
 
-    def __init__(self, input_shape, h_out, num_classes):
+    def __init__(self, input_shape, h_out, num_classes, num_channels=3):
         super(SimpleFNN, self).__init__()
         self.input_shape = input_shape
-        in_features = input_shape[0]*input_shape[1] # height*width
-        self.hidden_layer = nn.Linear(in_features, h_out, bias=False)
-        self.output_layer = nn.Linear(h_out,num_classes,bias=False)
+        in_features = input_shape[0]*input_shape[1]  # height*width
+
+
+        self.hidden_layer = nn.Linear(num_channels * in_features, h_out, bias=False)
+        self.output_layer = nn.Linear(h_out, num_classes, bias=False)
 
     def forward(self, x):
         """
@@ -28,6 +30,7 @@ class SimpleFNN(Network):
         pred = self.output_layer(pred)
         # note: output not softmax because CrossEntropyLoss in pytorch does the softmax transform for you
         return pred
+
 
 def test_load_model():
     '''
@@ -79,6 +82,7 @@ def main():
     test_evaluating()
 
     pass
+
 
 if __name__ == '__main__':
     main()
