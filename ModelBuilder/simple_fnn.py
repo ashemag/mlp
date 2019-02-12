@@ -1,4 +1,3 @@
-from mlp import data_provider
 from mlp_resources import data_providers
 from ModelBuilder.base import Network
 import numpy as np
@@ -38,10 +37,15 @@ class SimpleFNN(Network):
         # note: output not softmax because CrossEntropyLoss in pytorch does the softmax transform for you
         return pred
 
-def test_subclassing():
-    print("tetsing")
-    obj = Temp()
+def test_mnistdata():
+    seed = 9112018;
+    rng = np.random.RandomState(seed=seed)
+    train_data = data_providers.MNISTDataProvider('train', batch_size=100, rng=rng, max_num_batches=100)
 
+    inputs = train_data.inputs
+    targets = train_data.targets
+
+    print("targets: {} inputs: {}".format(inputs.shape,targets.shape))
     pass
 
 
@@ -93,7 +97,7 @@ def test_evaluating():
 def main():
     #test_train_and_save()
     #test_evaluating()
-    test_subclassing()
+    test_mnistdata()
 
     pass
 

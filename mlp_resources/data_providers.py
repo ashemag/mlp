@@ -22,7 +22,9 @@ else:
 import torch.utils.data as data
 from torchvision.datasets.utils import download_url, check_integrity
 from collections import Counter
+import globals
 
+os.environ['MLP_DATA_DIR'] = os.path.join(globals.ROOT_DIR,'data')
 
 class ModifyDataProvider(object):
     """ Modifies existing data provider to skew amount of instances of a certain label """
@@ -470,6 +472,44 @@ class AugmentedMNISTDataProvider(MNISTDataProvider):
         transformed_inputs_batch = self.transformer(inputs_batch, self.rng)
         return transformed_inputs_batch, targets_batch
 
+class CIFAR10Wrapper(DataProvider):
+    def __init__(self,batch_size=100,max_num_batches=-1,shuffle_order=True,rng=None):
+        data_dir = os.path.join(globals.ROOT_DIR, 'data')
+        data = CIFAR10(root=data_dir, set_name='test', download=False)  # if not train then test
+
+        img_inputs = []
+        for img, y in data:
+            print(img)
+            print(y)
+
+        inputs = None # integer encoded
+        targets = None # integer encoded
+
+        super(CIFAR10Wrapper,self).__init__(inputs,targets,batch_size,max_num_batches,shuffle_order,rng)
+        # i think inputs even tho comments says 2-tuple, can be 4-tuple as long as batch_size is 0-th position.
+
+        '''
+        inputs (ndarray): Array of data input features of shape
+                (num_data, input_dim).
+            targets (ndarray): Array of data output targets of shape
+                (num_data, output_dim) or (num_data,) if output_dim == 1.
+        '''
+
+    '''
+    def __init__(self, which_set='train', batch_size=100, max_num_batches=-1,
+                 shuffle_order=True, rng=None):
+
+    loaded = np.load(data_path)
+        inputs, targets = loaded['inputs'], loaded['targets']
+        inputs = inputs.astype(np.float32)
+        # pass the loaded data to the parent class __init__
+        super(MNISTDataProvider, self).__init__(
+            inputs, targets, batch_size, max_num_batches, shuffle_order, rng)
+    '''
+
+
+
+    pass
 
 class CIFAR10(data.Dataset):
     """`CIFAR10 <https://www.cs.toronto.edu/~kriz/cifar.html>`_ Dataset.
@@ -507,6 +547,7 @@ class CIFAR10(data.Dataset):
     def __init__(self, root, set_name,
                  transform=None, target_transform=None,
                  download=False):
+
         self.root = os.path.expanduser(root)
         self.transform = transform
         self.target_transform = target_transform
@@ -620,6 +661,7 @@ class CIFAR10(data.Dataset):
             target = self.target_transform(target)
 
         return img, target
+
 
     def __len__(self):
         return len(self.data)

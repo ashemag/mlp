@@ -52,7 +52,7 @@ class Network(torch.nn.Module):
 
     def train_iter(self,x_train_batch,y_train_batch):
         """
-        :param x_train_batch: array, one-hot-encoded
+        :param x_train_batch: array
         :param y_train_batch: array, one-hot-encoded
         :return:
         """
@@ -125,7 +125,7 @@ class Network(torch.nn.Module):
 
     def train_iter(self,x_train_batch,y_train_batch):
         """
-        :param x_train_batch: array, one-hot-encoded
+        :param x_train_batch:
         :param y_train_batch: array, one-hot-encoded
         :return:
         """
