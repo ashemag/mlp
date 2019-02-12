@@ -103,6 +103,12 @@ class DenseNetCifar10(Network):
 
         for k in ['bn1','avg_pool','fc']:
             if k=='fc':
+
+                temp = out.shape
+                print(" temp : ",temp)
+                print("length: ",len(temp))
+
+
                 out = out.view(out.shape[0],-1) # flatten
             out = self.layer_dict[k](out)
             print(out.shape,k)
@@ -116,48 +122,24 @@ def tests():
 
 if __name__ == '__main__':
     from mlp_resources.data_providers import CIFAR10
-
-    '''
-        def __getitem__(self, index):
-        """
-        Args:
-            index (int): Index
-
-        Returns:
-            tuple: (image, target) where target is index of the target class.
-        """
-        img, target = self.data[index], self.labels[index]
-    '''
-
-    '''
-     def __init__(self, root, set_name,
-                 transform=None, target_transform=None,
-                 download=False):
-    '''
-
     # rng = np.random.RandomState(seed=9112018)
     # valid_data = data_providers.MNISTDataProvider('valid', batch_size=100, rng=rng, max_num_batches=100)
-    from globals import ROOT_DIR
-    import os
+    # from globals import ROOT_DIR
+    # import os
+    #
+    # data_dir = os.path.join(ROOT_DIR, 'data')
+    # #data = CIFAR10(root=data_dir, set_name='test', download=False)
+    # model = DenseNetCifar10()
 
-    data_dir = os.path.join(ROOT_DIR, 'data')
-    data = CIFAR10(root=data_dir, set_name='test', download=False)
+    str = 'conv_3'
 
+    import re
+    conv_pattern = re.compile("^conv\_[0-9]+$")
 
-
-
-
-    model = DenseNetCifar10()
-    data = CIFAR10()
-
-    '''
-
-
-    '''
+    if str[0:4] == 'conv':
+        print("yes")
 
 
 
-    #model.train_full()
 
-    pass
 
