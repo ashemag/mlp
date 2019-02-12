@@ -31,13 +31,11 @@ class ConvNetCifar10(nn.Module):
             and MPOOL are 2x2. after each CONV layer ReLU tranform is added.
             '''
             self.config_list = [
-                {'type': 'conv', 'd': 32, 'k': 3, 's': 1, 'p': 0,'nl':'relu','repeat':1},
+                {'type': 'conv', 'd': 32, 'k': 3, 's': 1, 'p': 1,'nl':'relu','repeat':1},
                 {'type': 'mpool','k':2,'repeat':1},
-                {'type': 'conv', 'd': 32, 'k': 3, 's': 1, 'p': 0,'nl':'relu', 'repeat': 1},
+                {'type': 'conv', 'd': 32, 'k': 3, 's': 1, 'p': 1,'nl':'relu', 'repeat': 1},
                 {'type': 'mpool', 'k': 2, 'repeat': 1},
-                {'type': 'conv', 'd': 32, 'k': 3, 's': 1, 'p': 0, 'nl': 'relu', 'repeat': 1},
-                {'type': 'mpool', 'k': 2, 'repeat': 1},
-                {'type': 'conv', 'd': 32, 'k': 3, 's': 1, 'p': 0, 'nl': 'relu', 'repeat': 1},
+                {'type': 'conv', 'd': 32, 'k': 3, 's': 1, 'p': 1, 'nl': 'relu', 'repeat': 1},
                 {'type': 'mpool', 'k': 2, 'repeat': 1}
             ]
             classifier_pattern = [
@@ -54,7 +52,7 @@ class ConvNetCifar10(nn.Module):
     def forward(self,x):
         pred = x
         for k in self.layer_dict.keys(): # dict is ordered
-            if k=='fc':
+            if k[0:2]=='fc': # can be e.g. fc_2
                 pred = pred.view(pred.shape[0], -1)  # flatten
             pred = self.layer_dict[k](pred)
 
@@ -90,7 +88,7 @@ class ConvNetCifar10(nn.Module):
 
                 # update next idx of conv layer (used for naming the layers)
                 conv_idx += 1
-
+                print(out.shape,"conv")
             return out, conv_idx
 
         def add_pool_layer(out,config_dict,pool_idx,type):
@@ -111,6 +109,7 @@ class ConvNetCifar10(nn.Module):
 
                 # update next idx of pool layer (used for naming the layers)
                 pool_idx += 1
+                print(out.shape, "pool")
 
             return out, pool_idx
 
@@ -126,6 +125,7 @@ class ConvNetCifar10(nn.Module):
 
             # update the depth of the current volume (used for creating subsequent layers)
             out = self.layer_dict['fc_{}'.format(fc_idx)](out)
+            print(out.shape, "fc")
 
             # update next idx of fc layer (used for naming the layers)
             fc_idx += 1
@@ -139,13 +139,16 @@ class ConvNetCifar10(nn.Module):
             '''
             self.layer_dict['global_avg_pool'] = nn.AvgPool2d(kernel_size=out.shape[2])
             out = self.layer_dict['global_avg_pool'](out)
+            print(out.shape, "global avg. pool")
+
             return out
 
         print("building cnn module")
         x = torch.zeros((2,self.img_num_channels,self.img_height,self.img_width)) # dummy batch to infer layer shapes.
         out = x
+        print(out.shape, "input")
 
-        conv_idx = 0; mpool_idx = 0; apool_idx = 0
+        conv_idx = 0; mpool_idx = 0; apool_idx = 0; fc_idx = 0
         for layer_config_dict in self.config_list:
             if layer_config_dict['type'] == 'conv':
                 out, conv_idx = add_conv_layer(out,layer_config_dict,conv_idx)
@@ -163,3 +166,14 @@ class ConvNetCifar10(nn.Module):
                 out = add_global_avg_pool(out)
 
 
+def test_module():
+    model = ConvNetCifar10()
+    x = torch.zeros((2,3,32,32)) # dummy batch to infer layer shapes.
+    print("testing forward pass:")
+    pred = model(x)
+    print(pred)
+
+    pass
+
+if __name__ == '__main__':
+    test_module()
