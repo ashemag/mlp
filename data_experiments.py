@@ -42,14 +42,14 @@ class Experiment(object):
         samples, _, height, width = inputs.shape
         return inputs.reshape(samples, height * width)
 
+    @staticmethod
+    def _calculate(val_A, val_B):
+        return ((val_A - val_B) / float(val_B)) * 100
+
     def _compare(self, train_data_full, train_data_mod, test_data):
-        rng = np.random.RandomState(seed=9112018)
         num_epochs = 100
 
         # TRAIN FULL
-        # model_full = SimpleFNN(input_shape=(32, 32), h_out=100, num_classes=10)
-        # optimizer = optim.SGD(model_full.parameters(), lr=1e-1)
-        # train_acc_full, train_loss_full = self._train(model_full, 'full_data_test', train_data_full, num_epochs, optimizer)
         model_full = CNNNet(3, 32, 32)
         optimizer = optim.SGD(model_full.parameters(), lr=0.001, momentum=0.9)
         train_acc_full, train_loss_full = self._train(model_full, 'full_data_test', train_data_full, num_epochs, optimizer)
@@ -63,11 +63,10 @@ class Experiment(object):
         valid_acc_mod, valid_loss_mod = self._evaluate(model_mod, 'full_data_test', test_data,
                                                          [i for i in range(num_epochs)])
 
-        # calculate differences
-        train_acc_diff = ((train_acc_mod - train_acc_full) / float(train_acc_mod)) * 100
-        train_loss_diff = ((train_loss_mod - train_loss_full) / float(train_loss_mod)) * 100
-        valid_acc_diff = ((valid_acc_mod - valid_acc_full) / float(train_acc_mod)) * 100
-        valid_loss_diff = ((valid_loss_mod - valid_loss_full) / float(valid_loss_mod)) * 100
+        train_acc_diff = self._calculate(train_acc_mod, train_acc_full)
+        train_loss_diff = self._calculate(train_loss_mod, train_loss_full)
+        valid_acc_diff = self._calculate(valid_acc_mod, valid_acc_full)
+        valid_loss_diff = self._calculate(valid_loss_mod, valid_loss_full)
 
         return train_acc_diff, train_loss_diff, valid_acc_diff, valid_loss_diff
 
@@ -114,6 +113,8 @@ def cifar_driver():
 
     target_percentage = .01
     label = b'horse'
+    print("Setting percentage reduction to {0} for label {1}".format(target_percentage, label))
+
     inputs_full, targets_full, inputs_mod, targets_mod = m.modify(label, target_percentage, inputs, targets)
     # m.get_label_distribution([labels[i] for i in targets_full])
 
