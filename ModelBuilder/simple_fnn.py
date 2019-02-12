@@ -15,15 +15,16 @@ class Temp(DenseNet,Network):
 
         print("here")
 
-
 class SimpleFNN(Network):
 
-    def __init__(self, input_shape, h_out, num_classes):
+    def __init__(self, input_shape, h_out, num_classes, num_channels=3):
         super(SimpleFNN, self).__init__()
         self.input_shape = input_shape
-        in_features = input_shape[0]*input_shape[1] # height*width
-        self.hidden_layer = nn.Linear(in_features, h_out, bias=False)
-        self.output_layer = nn.Linear(h_out,num_classes,bias=False)
+        in_features = input_shape[0]*input_shape[1]  # height*width
+
+
+        self.hidden_layer = nn.Linear(num_channels * in_features, h_out, bias=False)
+        self.output_layer = nn.Linear(h_out, num_classes, bias=False)
 
     def forward(self, x):
         """
@@ -47,7 +48,6 @@ def test_mnistdata():
 
     print("targets: {} inputs: {}".format(inputs.shape,targets.shape))
     pass
-
 
 def test_load_model():
     '''
@@ -100,6 +100,7 @@ def main():
     test_mnistdata()
 
     pass
+
 
 if __name__ == '__main__':
     main()

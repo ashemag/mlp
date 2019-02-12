@@ -126,6 +126,7 @@ class Network(torch.nn.Module):
     def train_iter(self,x_train_batch,y_train_batch):
         """
         :param x_train_batch:
+        :param x_train_batch: array
         :param y_train_batch: array, one-hot-encoded
         :return:
         """
@@ -133,10 +134,10 @@ class Network(torch.nn.Module):
         # CrossEntropyLoss. Input: (N,C), target: (N) each value is integer encoded.
 
         self.train()
-        y_train_batch_int = np.argmax(y_train_batch,axis=1)
+        y_train_batch_int = np.argmax(y_train_batch, axis=1)
         y_train_batch_int = torch.Tensor(y_train_batch_int).long().to(device=self.device)
         x_train_batch = torch.Tensor(x_train_batch).float().to(device=self.device)
-        y_pred_batch = self(x_train_batch) # model forward pass
+        y_pred_batch = self.forward(x_train_batch) # model forward pass
         loss = F.cross_entropy(input=y_pred_batch,target=y_train_batch_int) # self.cross_entropy(input=y_pred_batch,target=y_train_batch_int)
         self.optimizer.zero_grad()
         loss.backward()
